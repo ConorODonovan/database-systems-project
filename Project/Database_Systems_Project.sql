@@ -70,14 +70,6 @@ CREATE TABLE tags (
     tag_name VARCHAR(64)
 );
 
-CREATE TABLE screenshots (
-	screenshot_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    game_id INT,
-    FOREIGN KEY(user_id) REFERENCES users(id),
-    FOREIGN KEY(game_id) REFERENCES games(game_id)
-);
-
 CREATE TABLE gamesowned (
 	id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT,
@@ -190,72 +182,73 @@ INSERT INTO reviews (
     game_id
 )
 VALUES
-	(),
-    (),
-    (),
-    (),
-    (),
-    (),
-    (),
-    (),
-    (),
-    ();
+	("P", "Amazing!", 2, 1),
+    ("P", "Great game!", 2, 5),
+    ("N", "Boring!", 4, 2),
+    ("P", "Fantastic!", 5, 1),
+    ("N", "Too hard!", 6, 3),
+    ("P", "Best game ever!", 6, 10),
+    ("N", "Rubbish!", 6, 9),
+    ("N", "Save your money!", 8, 8),
+    ("P", "Must buy!", 10, 3),
+    ("P", "Excellent!", 10, 6);
 
 INSERT INTO tags (
 	tag_name
 )
 VALUES
-	(),
-	(),
-    (),
-    (),
-    ();
-
-INSERT INTO screenshots (
-	user_id,
-    game_id
-)
-VALUES
-	(),
-    (),
-    (),
-    (),
-    (),
-    (),
-    (),
-    (),
-    (),
-    ();
-
+	("Action"),
+	("Difficult"),
+    ("Fantasy"),
+    ("FPS"),
+    ("Open World"),
+    ("Sports"),
+    ("Cars");
 
 INSERT INTO gamesowned (
 	user_id,
     game_id
 )
 VALUES
-	(),
-    (),
-    (),
-    (),
-    (),
-    (),
-    (),
-    (),
-    (),
-    ();
+	(1, 2),
+    (1, 4),
+    (1, 6),
+    (1, 8),
+    (2, 1),
+    (3, 3),
+    (3, 5),
+    (5, 2),
+    (5, 5),
+    (5, 7),
+    (6, 9),
+    (6, 10),
+    (8, 5),
+    (9, 1),
+    (9, 2),
+    (9, 3),
+    (10, 5),
+    (10, 7),
+    (10, 9),
+    (10, 10);
 
 INSERT INTO tagsgames (
 	tag_id,
     game_id
 )
 VALUES
-	(),
-    (),
-    (),
-    (),
-    (),
-    (),
-    (),
-    (),
-    (),
-    ();
+	(1, 2),
+    (1, 3),
+    (1, 4),
+    (2, 1),
+    (2, 3),
+    (3, 1),
+    (3, 6),
+    (4, 4),
+    (5, 4),
+    (5, 5),
+    (5, 6),
+    (5, 7),
+    (5, 9),
+    (5, 10),
+    (6, 8),
+    (7, 7);
