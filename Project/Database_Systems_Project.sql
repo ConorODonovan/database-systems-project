@@ -48,7 +48,7 @@ CREATE TABLE games (
     release_date DATE,
     price DECIMAL(5,2),
     age_rating INT,
-    copies_sold LONG,
+    copies_sold INT,
     dev_id INT,
     pub_id INT,
     FOREIGN KEY(dev_id) REFERENCES developers(dev_id),
@@ -252,3 +252,37 @@ VALUES
     (5, 10),
     (6, 8),
     (7, 7);
+
+-- Queries
+-- What is the best-selling game?
+SELECT 
+	title AS "Title",
+    copies_sold AS "Sales"
+FROM games
+WHERE copies_sold = (SELECT MAX(copies_sold) FROM games);
+
+-- Who is the oldest user and what is their age?
+SELECT
+	username AS "User",
+    (SELECT (DATEDIFF(CURDATE(), date_of_birth))/365) AS "Age"
+FROM users
+WHERE date_of_birth = (SELECT(MIN(date_of_birth)) FROM users);
+
+-- How many users are from each country?
+SELECT address_country AS "Country", COUNT(username) AS "Users"
+	FROM users
+GROUP BY address_country;
+
+-- Views and Joins
+-- View showing number of occurences of each tag, ordered by popularity
+CREATE VIEW tagpopularity AS
+	SELECT tag_name AS "Tag", COUNT(tags.tag_id) AS "No. of Games"
+		FROM tags
+	JOIN tagsgames
+    ON tags.tag_id = tagsgames.tag_id
+	GROUP BY tag_name
+    ORDER BY COUNT("No. of Games") DESC;
+    
+SELECT * FROM tagpopularity;
+    
+-- View showing each user and the number of games they own
