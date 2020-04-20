@@ -286,3 +286,56 @@ CREATE VIEW tagpopularity AS
 SELECT * FROM tagpopularity;
     
 -- View showing each user and the number of games they own
+CREATE VIEW gamesownedbyusers AS
+	SELECT username AS "User", COUNT(users.id) AS "No. of Games"
+		FROM users
+	JOIN gamesowned
+    ON users.id = gamesowned.user_id
+    GROUP BY user_id
+    ORDER BY COUNT("No. of Games") DESC;
+    
+SELECT * FROM gamesownedbyusers;
+
+-- View showing score for each game based on positive reviews divided by total reviews
+SELECT
+	games.title AS Title,
+    COUNT(CASE
+			WHEN reviews.pos_or_neg = "P"
+				THEN reviews.pos_or_neg
+			ELSE NULL
+            END)
+            AS "Positive Reviews",
+    COUNT(CASE
+			WHEN reviews.pos_or_neg = "N"
+				THEN reviews.pos_or_neg
+			ELSE NULL
+            END)
+            AS 'Negative Reviews',
+	IFNULL(
+    CONCAT(
+	COUNT(CASE
+			WHEN reviews.pos_or_neg = "P"
+				THEN reviews.pos_or_neg
+			ELSE NULL
+            END)
+	/
+    (
+		COUNT(CASE
+				WHEN reviews.pos_or_neg = "N"
+					THEN reviews.pos_or_neg
+				ELSE NULL
+				END)
+		+
+		COUNT(CASE
+				WHEN reviews.pos_or_neg = "P"
+					THEN reviews.pos_or_neg
+				ELSE NULL
+				END)
+		) * 100, '%'),
+		"N/A")
+    AS 'Score'
+	FROM games
+LEFT JOIN reviews
+ON (games.game_id = reviews.game_id AND reviews.pos_or_neg = "P")
+OR (games.game_id = reviews.game_id AND reviews.pos_or_neg = "N")
+GROUP BY games.title;
