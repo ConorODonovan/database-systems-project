@@ -405,4 +405,6 @@ END //
 
 SELECT developerRevenue("FromSoftware") AS "Developer Revenue";
 
--- Stored Procedures
+-- Stored Procedures and Temp Tables
+
+-- Triggers
