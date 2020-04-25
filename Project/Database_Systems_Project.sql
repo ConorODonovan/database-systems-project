@@ -27,8 +27,8 @@ CREATE TABLE credit_card (
     billing_address_city VARCHAR(30) NOT NULL,
     billing_address_country VARCHAR(30) NOT NULL,
     billing_address_postcode VARCHAR(10) NOT NULL,
-    user_id INT NOT NULL,
-    FOREIGN KEY(user_id) REFERENCES users(id)
+    fk_user_id INT NOT NULL,
+    FOREIGN KEY(fk_user_id) REFERENCES users(id)
 );
 
 CREATE TABLE developers (
@@ -49,20 +49,20 @@ CREATE TABLE games (
     price DECIMAL(5,2),
     age_rating INT,
     copies_sold INT,
-    dev_id INT,
-    pub_id INT,
-    FOREIGN KEY(dev_id) REFERENCES developers(dev_id),
-    FOREIGN KEY(pub_id) REFERENCES publishers(pub_id)
+    fk_dev_id INT,
+    fk_pub_id INT,
+    FOREIGN KEY(fk_dev_id) REFERENCES developers(dev_id),
+    FOREIGN KEY(fk_pub_id) REFERENCES publishers(pub_id)
 );
 
 CREATE TABLE reviews (
 	review_id INT AUTO_INCREMENT PRIMARY KEY,
     pos_or_neg CHAR(1),
     review_text VARCHAR(4096),
-    user_id INT,
-    game_id INT,
-    FOREIGN KEY(user_id) REFERENCES users(id),
-    FOREIGN KEY(game_id) REFERENCES games(game_id)
+    fk_user_id INT,
+    fk_game_id INT,
+    FOREIGN KEY(fk_user_id) REFERENCES users(id),
+    FOREIGN KEY(fk_game_id) REFERENCES games(game_id)
 );
 
 CREATE TABLE tags (
@@ -72,18 +72,18 @@ CREATE TABLE tags (
 
 CREATE TABLE gamesowned (
 	id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    game_id INT,
-    FOREIGN KEY(user_id) REFERENCES users(id),
-    FOREIGN KEY(game_id) REFERENCES games(game_id)
+    fk_user_id INT,
+    fk_game_id INT,
+    FOREIGN KEY(fk_user_id) REFERENCES users(id),
+    FOREIGN KEY(fk_game_id) REFERENCES games(game_id)
 );
 
 CREATE TABLE tagsgames (
 	id INT AUTO_INCREMENT PRIMARY KEY,
-    tag_id INT,
-    game_id INT,
-    FOREIGN KEY(tag_id) REFERENCES tags(tag_id),
-    FOREIGN KEY(game_id) REFERENCES games(game_id)
+    fk_tag_id INT,
+    fk_game_id INT,
+    FOREIGN KEY(fk_tag_id) REFERENCES tags(tag_id),
+    FOREIGN KEY(fk_game_id) REFERENCES games(game_id)
 );
 
 -- Data
@@ -120,7 +120,7 @@ INSERT INTO credit_card (
     billing_address_city,
     billing_address_country,
     billing_address_postcode,
-    user_id
+    fk_user_id
 )
 VALUES
 	("Visa", 6415862130120548, "2023-02-01", 563, "2 Oak Street", "London", "United Kingdom", "A16B12", 1),
@@ -160,8 +160,8 @@ INSERT INTO games (
     price,
     age_rating,
     copies_sold,
-    dev_id,
-    pub_id
+    fk_dev_id,
+    fk_pub_id
 )
 VALUES
 	("Dark Souls", "RPG", "2011-09-22", 19.99, 15, 800000, 1, 1),
@@ -178,8 +178,8 @@ VALUES
 INSERT INTO reviews (
 	pos_or_neg,
     review_text,
-    user_id,
-    game_id
+    fk_user_id,
+    fk_game_id
 )
 VALUES
 	("P", "Amazing!", 2, 1),
@@ -206,8 +206,8 @@ VALUES
     ("Cars");
 
 INSERT INTO gamesowned (
-	user_id,
-    game_id
+	fk_user_id,
+    fk_game_id
 )
 VALUES
 	(1, 2),
@@ -232,8 +232,8 @@ VALUES
     (10, 10);
 
 INSERT INTO tagsgames (
-	tag_id,
-    game_id
+	fk_tag_id,
+    fk_game_id
 )
 VALUES
 	(1, 2),
@@ -279,7 +279,7 @@ CREATE VIEW tagpopularity AS
 	SELECT tag_name AS "Tag", COUNT(tags.tag_id) AS "No. of Games"
 		FROM tags
 	JOIN tagsgames
-    ON tags.tag_id = tagsgames.tag_id
+    ON tags.tag_id = tagsgames.fk_tag_id
 	GROUP BY tag_name
     ORDER BY COUNT("No. of Games") DESC;
     
@@ -290,8 +290,8 @@ CREATE VIEW gamesownedbyusers AS
 	SELECT username AS "User", COUNT(users.id) AS "No. of Games"
 		FROM users
 	JOIN gamesowned
-    ON users.id = gamesowned.user_id
-    GROUP BY user_id
+    ON users.id = gamesowned.fk_user_id
+    GROUP BY fk_user_id
     ORDER BY COUNT("No. of Games") DESC;
     
 SELECT * FROM gamesownedbyusers;
@@ -312,30 +312,97 @@ SELECT
             END)
             AS 'Negative Reviews',
 	IFNULL(
-    CONCAT(
-	COUNT(CASE
-			WHEN reviews.pos_or_neg = "P"
-				THEN reviews.pos_or_neg
-			ELSE NULL
-            END)
-	/
-    (
-		COUNT(CASE
-				WHEN reviews.pos_or_neg = "N"
-					THEN reviews.pos_or_neg
-				ELSE NULL
-				END)
-		+
-		COUNT(CASE
-				WHEN reviews.pos_or_neg = "P"
-					THEN reviews.pos_or_neg
-				ELSE NULL
-				END)
-		) * 100, '%'),
-		"N/A")
+		CONCAT(
+			COUNT(CASE
+					WHEN reviews.pos_or_neg = "P"
+						THEN reviews.pos_or_neg
+					ELSE NULL
+					END)/
+				(COUNT(CASE
+						WHEN reviews.pos_or_neg = "N"
+							THEN reviews.pos_or_neg
+						ELSE NULL
+						END)
+				+
+				COUNT(CASE
+						WHEN reviews.pos_or_neg = "P"
+							THEN reviews.pos_or_neg
+						ELSE NULL
+						END))
+			* 100, '%'),
+		"No reviews")
     AS 'Score'
 	FROM games
 LEFT JOIN reviews
-ON (games.game_id = reviews.game_id AND reviews.pos_or_neg = "P")
-OR (games.game_id = reviews.game_id AND reviews.pos_or_neg = "N")
+ON (games.game_id = reviews.fk_game_id AND reviews.pos_or_neg = "P")
+OR (games.game_id = reviews.fk_game_id AND reviews.pos_or_neg = "N")
 GROUP BY games.title;
+
+-- Functions
+-- Function to find total amount a user has spent
+DROP FUNCTION IF EXISTS amountSpent;
+
+DELIMITER //
+
+CREATE FUNCTION amountSpent(param VARCHAR(30)) RETURNS DECIMAL(5,2)
+BEGIN
+
+	DECLARE num DECIMAL(5,2);
+    
+	SELECT SUM(games.price) INTO num
+		FROM games
+		JOIN gamesowned
+		ON games.game_id = gamesowned.fk_game_id
+        JOIN users
+        ON users.id = gamesowned.fk_user_id
+		WHERE users.username = param
+		GROUP BY users.username;
+        
+        RETURN num;
+END //
+
+SELECT amountSpent("JaneMurphy") AS "Amount Spent";
+
+-- Function to find out how much revenue a game generated
+DROP FUNCTION IF EXISTS gameRevenue;
+
+DELIMITER //
+
+CREATE FUNCTION gameRevenue(param VARCHAR(255)) RETURNS DECIMAL(10,2)
+BEGIN
+	DECLARE num DECIMAL(10,2);
+		SELECT (games.price * games.copies_sold) INTO num
+        FROM games
+        WHERE games.title = param;
+	
+    RETURN num;
+    
+END //
+
+SELECT gameRevenue("Dark Souls") AS "Total Revenue";
+
+-- Function to find out the total revenue a developer has made
+DROP FUNCTION IF EXISTS developerRevenue;
+
+DELIMITER //
+
+CREATE FUNCTION developerRevenue(param VARCHAR(255)) RETURNS DECIMAL(10,2)
+BEGIN
+	DECLARE num DECIMAL(10,2);
+    
+		SELECT SUM(games.price) INTO num
+			FROM games
+		JOIN developers
+			ON games.fk_dev_id = developers.dev_id
+		JOIN gamesowned
+			ON gamesowned.fk_game_id = games.game_id
+		WHERE developers.dev_name = param
+		GROUP BY developers.dev_name;
+            
+	RETURN num;
+            
+END //
+
+SELECT developerRevenue("FromSoftware") AS "Developer Revenue";
+
+-- Stored Procedures
