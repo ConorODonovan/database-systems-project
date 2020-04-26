@@ -86,6 +86,13 @@ CREATE TABLE tagsgames (
     FOREIGN KEY(fk_game_id) REFERENCES games(game_id)
 );
 
+CREATE TABLE deletedusers (
+	id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(30) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+
 -- Data
 INSERT INTO users (
 	username,
@@ -253,6 +260,7 @@ VALUES
     (6, 8),
     (7, 7);
 
+
 -- Queries
 -- What is the best-selling game?
 SELECT 
@@ -272,6 +280,7 @@ WHERE date_of_birth = (SELECT(MIN(date_of_birth)) FROM users);
 SELECT address_country AS "Country", COUNT(username) AS "Users"
 	FROM users
 GROUP BY address_country;
+
 
 -- Views and Joins
 -- View showing number of occurences of each tag, ordered by popularity
@@ -337,6 +346,7 @@ LEFT JOIN reviews
 ON (games.game_id = reviews.fk_game_id AND reviews.pos_or_neg = "P")
 OR (games.game_id = reviews.fk_game_id AND reviews.pos_or_neg = "N")
 GROUP BY games.title;
+
 
 -- Functions
 -- Function to find total amount a user has spent
@@ -405,6 +415,111 @@ END //
 
 SELECT developerRevenue("FromSoftware") AS "Developer Revenue";
 
+
 -- Stored Procedures and Temp Tables
+-- Stored Procedure to create Temp Table showing number of reviews per user
+DROP TEMPORARY TABLE IF EXISTS reviewCountUser;
+DROP PROCEDURE IF EXISTS showUserReviewCountUser;
+
+DELIMITER //
+
+CREATE PROCEDURE showUserReviewCountUser()
+LANGUAGE SQL
+DETERMINISTIC
+SQL SECURITY DEFINER
+COMMENT 'Show User Review Count'
+BEGIN
+	CREATE TEMPORARY TABLE IF NOT EXISTS reviewCountUser
+		SELECT users.username AS "User", COUNT(*) AS "No. of Reviews"
+		FROM users, reviews
+        WHERE users.id = reviews.fk_user_id
+        GROUP BY users.username;
+	SELECT * FROM reviewCountUser;
+END//
+
+CALL showUserReviewCountUser();
+
+-- Stored Procedure to create Temp Table showing number of reviews per game
+DROP TEMPORARY TABLE IF EXISTS reviewCountGame;
+DROP PROCEDURE IF EXISTS showUserReviewCountGame;
+
+DELIMITER //
+
+CREATE PROCEDURE showUserReviewCountGame()
+LANGUAGE SQL
+DETERMINISTIC
+SQL SECURITY DEFINER
+COMMENT 'Show Game Review Count'
+BEGIN
+	CREATE TEMPORARY TABLE IF NOT EXISTS reviewCountGame
+		SELECT games.title AS "Game Title", COUNT(*) AS "No. of Reviews"
+		FROM games, reviews
+        WHERE games.game_id = reviews.fk_game_id
+        GROUP BY games.title;
+	SELECT * FROM reviewCountGame;
+END//
+
+CALL showUserReviewCountGame();
+
+-- Stored Procedure to create Temp Table showing number of tags per game
+DROP TEMPORARY TABLE IF EXISTS tagCountGame;
+DROP PROCEDURE IF EXISTS showTagCountGame;
+
+DELIMITER //
+
+CREATE PROCEDURE showTagCountGame()
+LANGUAGE SQL
+DETERMINISTIC
+SQL SECURITY DEFINER
+COMMENT 'Show User Review Count'
+BEGIN
+	CREATE TEMPORARY TABLE IF NOT EXISTS tagCountGame
+		SELECT games.title AS "Game Title", COUNT(*) AS "No. of Tags"
+		FROM games, tagsgames
+        WHERE games.game_id = tagsgames.fk_game_id
+        GROUP BY games.title;
+	SELECT * FROM tagCountGame;
+END//
+
+CALL showTagCountGame();
+
 
 -- Triggers
+-- Check if age of new user is greater than 13
+DROP TRIGGER IF EXISTS checkAge;
+
+DELIMITER //
+CREATE TRIGGER checkAge
+	BEFORE INSERT ON users FOR EACH ROW
+    BEGIN
+		IF (NEW.date_of_birth - CURDATE()) < 13
+        THEN
+			SIGNAL SQLSTATE '45000'
+				SET MESSAGE_TEXT = "You must be at least thirteen years old to sign up to Steam";
+		END IF;
+	END //
+
+-- Stop duplicate usernames
+DROP TRIGGER IF EXISTS checkAge;
+
+DELIMITER //
+CREATE TRIGGER duplicateUser
+	BEFORE INSERT ON users FOR EACH ROW
+    BEGIN
+		IF LENGTH(NEW.username) < 3
+        THEN
+			SIGNAL SQLSTATE '45000'
+				SET MESSAGE_TEXT = "Error - username must be at least three characters";
+		END IF;
+	END //
+    
+-- Keep track of deleted users
+DROP TRIGGER IF EXISTS deletedUser;
+
+DELIMITER //
+CREATE TRIGGER deletedUser
+	BEFORE DELETE ON users FOR EACH ROW
+    BEGIN
+		INSERT INTO deletedusers(id, username, created_at)
+        VALUES(OLD.id, OLD.username, NOW());
+	END //
