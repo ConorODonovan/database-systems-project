@@ -70,6 +70,7 @@ CREATE TABLE tags (
     tag_name VARCHAR(64)
 );
 
+-- Relationship table to manage the many-to-many relationship between the users and games tables
 CREATE TABLE gamesowned (
 	id INT AUTO_INCREMENT PRIMARY KEY,
     fk_user_id INT,
@@ -78,6 +79,7 @@ CREATE TABLE gamesowned (
     FOREIGN KEY(fk_game_id) REFERENCES games(game_id)
 );
 
+-- Relationship table to manage the many-to-many relationship between the tags and games tables
 CREATE TABLE tagsgames (
 	id INT AUTO_INCREMENT PRIMARY KEY,
     fk_tag_id INT,
@@ -86,6 +88,7 @@ CREATE TABLE tagsgames (
     FOREIGN KEY(fk_game_id) REFERENCES games(game_id)
 );
 
+-- Audit log table to store a record of users that delete their accounts
 CREATE TABLE deletedusers (
 	id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(30) UNIQUE NOT NULL,
@@ -306,46 +309,49 @@ CREATE VIEW gamesownedbyusers AS
 SELECT * FROM gamesownedbyusers;
 
 -- View showing score for each game based on positive reviews divided by total reviews
-SELECT
-	games.title AS Title,
-    COUNT(CASE
-			WHEN reviews.pos_or_neg = "P"
-				THEN reviews.pos_or_neg
-			ELSE NULL
-            END)
-            AS "Positive Reviews",
-    COUNT(CASE
-			WHEN reviews.pos_or_neg = "N"
-				THEN reviews.pos_or_neg
-			ELSE NULL
-            END)
-            AS 'Negative Reviews',
-	IFNULL(
-		CONCAT(
-			COUNT(CASE
-					WHEN reviews.pos_or_neg = "P"
-						THEN reviews.pos_or_neg
-					ELSE NULL
-					END)/
-				(COUNT(CASE
-						WHEN reviews.pos_or_neg = "N"
-							THEN reviews.pos_or_neg
-						ELSE NULL
-						END)
-				+
+CREATE VIEW reviewScore AS
+	SELECT
+		games.title AS Title,
+		COUNT(CASE
+				WHEN reviews.pos_or_neg = "P"
+					THEN reviews.pos_or_neg
+				ELSE NULL
+				END)
+				AS "Positive Reviews",
+		COUNT(CASE
+				WHEN reviews.pos_or_neg = "N"
+					THEN reviews.pos_or_neg
+				ELSE NULL
+				END)
+				AS 'Negative Reviews',
+		IFNULL(
+			CONCAT(
 				COUNT(CASE
 						WHEN reviews.pos_or_neg = "P"
 							THEN reviews.pos_or_neg
 						ELSE NULL
-						END))
-			* 100, '%'),
-		"No reviews")
-    AS 'Score'
-	FROM games
-LEFT JOIN reviews
-ON (games.game_id = reviews.fk_game_id AND reviews.pos_or_neg = "P")
-OR (games.game_id = reviews.fk_game_id AND reviews.pos_or_neg = "N")
-GROUP BY games.title;
+						END)/
+					(COUNT(CASE
+							WHEN reviews.pos_or_neg = "N"
+								THEN reviews.pos_or_neg
+							ELSE NULL
+							END)
+					+
+					COUNT(CASE
+							WHEN reviews.pos_or_neg = "P"
+								THEN reviews.pos_or_neg
+							ELSE NULL
+							END))
+				* 100, '%'),
+			"No reviews")
+		AS 'Score'
+		FROM games
+	LEFT JOIN reviews
+	ON (games.game_id = reviews.fk_game_id AND reviews.pos_or_neg = "P")
+	OR (games.game_id = reviews.fk_game_id AND reviews.pos_or_neg = "N")
+	GROUP BY games.title;
+
+SELECT * FROM reviewScore;
 
 
 -- Functions
